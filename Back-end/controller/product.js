@@ -1,3 +1,5 @@
+// backend/controllers/product.js
+
 const express = require('express');
 const Product = require('../model/product');
 const User = require('../model/user');
@@ -5,7 +7,6 @@ const router = express.Router();
 const { pupload } = require("../multer");
 const path = require('path');
 
-// Validation function
 const validateProductData = (data) => {
     const errors = [];
 
@@ -46,7 +47,6 @@ router.post('/create-product', pupload.array('images', 10), async (req, res) => 
             return res.status(400).json({ error: 'Email does not exist in the users database' });
         }
 
-        // Create and save the new product
         const newProduct = new Product({
             name,
             description,
@@ -57,7 +57,6 @@ router.post('/create-product', pupload.array('images', 10), async (req, res) => 
             email,
             images,
         });
-
         await newProduct.save();
 
         res.status(201).json({
@@ -76,7 +75,6 @@ router.get('/get-products', async (req, res) => {
         const productsWithFullImageUrl = products.map(product => {
             if (product.images && product.images.length > 0) {
                 product.images = product.images.map(imagePath => {
-                    // Image URLs are already prefixed with /products
                     return imagePath;
                 });
             }
@@ -111,6 +109,7 @@ router.get('/my-products', async (req, res) => {
 
 
 router.get('/product/:id', async (req, res) => {
+    console.log("Fetching product");
     const { id } = req.params;
     try {
         const product = await Product.findById(id);
@@ -172,6 +171,23 @@ router.put('/update-product/:id', pupload.array('images', 10), async (req, res) 
     } catch (err) {
         console.error('Server error:', err);
         res.status(500).json({ error: 'Server error. Could not update product.' });
+    }
+});
+
+router.delete('/delete-product/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const existingProduct = await Product.findById(id);
+        if (!existingProduct) {
+            return res.status(404).json({ error: 'Product not found.' });
+        }
+
+        await existingProduct.deleteOne();
+        res.status(200).json({ message: '✅ Product deleted successfully' });
+    } catch (err) {
+        console.error('Server error:', err);
+        res.status(500).json({ error: 'Server error. Could not delete product.' });
     }
 });
 
